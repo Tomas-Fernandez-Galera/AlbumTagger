@@ -2,11 +2,19 @@
 
 Copyright © 2026 Tomás Fernández Galera.
 
-El código fuente se distribuye bajo la [GNU General Public License versión 3](LICENSE). El nombre AlbumTagger, su icono y su identidad visual no se conceden bajo la GPL; consulta [TRADEMARKS.md](TRADEMARKS.md).
+AlbumTagger is a Windows desktop application that detects and fixes metadata differences capable of splitting one album into several “ghost albums”. It is especially optimized for preparing music libraries used with moOde Audio, while remaining compatible with other players and servers that support standard tags.
+
+AlbumTagger is an independent project and is not officially affiliated with or endorsed by moOde Audio.
+
+The source code is distributed under the [GNU General Public License version 3](LICENSE). The AlbumTagger name, icon and visual identity are not licensed under the GPL; see [TRADEMARKS.md](TRADEMARKS.md).
+
+## Español
 
 Aplicación de escritorio para Windows que detecta y corrige diferencias de metadatos capaces de dividir un álbum en varios álbumes «fantasma». Está especialmente optimizada para preparar bibliotecas musicales utilizadas con moOde Audio, aunque funciona con otros reproductores y servidores compatibles con etiquetas estándar.
 
 AlbumTagger es un proyecto independiente y no está afiliado ni respaldado oficialmente por moOde Audio.
+
+El código fuente se distribuye bajo la [GNU General Public License versión 3](LICENSE). El nombre AlbumTagger, su icono y su identidad visual no se conceden bajo la GPL; consulta [TRADEMARKS.md](TRADEMARKS.md).
 
 ## Funciones principales
 
