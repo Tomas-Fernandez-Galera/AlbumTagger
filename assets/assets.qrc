@@ -1,0 +1,14 @@
+<RCC>
+ <qresource prefix="/flags">
+  <file alias="es.svg">flags/es.svg</file><file alias="en.svg">flags/en.svg</file>
+  <file alias="fr.svg">flags/fr.svg</file><file alias="de.svg">flags/de.svg</file>
+  <file alias="it.svg">flags/it.svg</file><file alias="pt.svg">flags/pt.svg</file>
+  <file alias="nl.svg">flags/nl.svg</file><file alias="pl.svg">flags/pl.svg</file>
+  <file alias="ru.svg">flags/ru.svg</file><file alias="zh_CN.svg">flags/zh_CN.svg</file>
+  <file alias="ja.svg">flags/ja.svg</file><file alias="ko.svg">flags/ko.svg</file>
+  <file alias="ca.svg">flags/ca.svg</file><file alias="eu.svg">flags/eu.svg</file><file alias="gl.svg">flags/gl.svg</file>
+ </qresource>
+ <qresource prefix="/app">
+  <file alias="icon.svg">app-icon.svg</file>
+ </qresource>
+</RCC>

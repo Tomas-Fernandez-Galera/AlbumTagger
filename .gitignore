@@ -1,0 +1,11 @@
+/build*/
+/dist/
+/out/
+/.qt/
+/.qtcreator*/
+/.qtc_clangd/
+/CMakeUserPresets.json
+*.user
+*.autosave
+*.bak
+/PROJECT_STATUS.md
