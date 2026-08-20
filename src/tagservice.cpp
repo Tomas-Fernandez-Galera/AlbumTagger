@@ -158,25 +158,27 @@ void TagService::analyze(QList<TrackInfo> &tracks)
     for (auto &track : tracks) {
         track.issues.clear();
         if (!track.readable) {
-            track.issues << track.error;
+            track.issues << QStringLiteral("readError");
             continue;
         }
-        if (track.title.trimmed().isEmpty()) track.issues << QStringLiteral("Sin título");
-        if (track.artist.trimmed().isEmpty()) track.issues << QStringLiteral("Sin artista");
-        if (track.album.trimmed().isEmpty()) track.issues << QStringLiteral("Sin álbum");
-        if (track.albumArtist.trimmed().isEmpty()) track.issues << QStringLiteral("Sin artista del álbum");
-        if (track.track == 0) track.issues << QStringLiteral("Sin número de pista");
+        // Los avisos se guardan como identificadores estables. La ventana los
+        // traduce al mostrarlos; la validación nunca depende del idioma activo.
+        if (track.title.trimmed().isEmpty()) track.issues << QStringLiteral("missingTitle");
+        if (track.artist.trimmed().isEmpty()) track.issues << QStringLiteral("missingArtist");
+        if (track.album.trimmed().isEmpty()) track.issues << QStringLiteral("missingAlbum");
+        if (track.albumArtist.trimmed().isEmpty()) track.issues << QStringLiteral("missingAlbumArtist");
+        if (track.track == 0) track.issues << QStringLiteral("missingTrackNumber");
         const QString directory = QFileInfo(track.path).absolutePath();
         if (!track.album.trimmed().isEmpty() &&
             (directoriesWithoutUniqueMajority.contains(directory) ||
              (dominantAlbumByDirectory.contains(directory) &&
               comparisonKey(track.album) != dominantAlbumByDirectory.value(directory)))) {
-            track.issues << QStringLiteral("Nombre de álbum inconsistente");
+            track.issues << QStringLiteral("inconsistentAlbumName");
         }
         const QString trackKey = comparisonKey(track.album) + QLatin1Char('|') + track.discText +
                                  QLatin1Char('|') + QString::number(track.track);
         if (track.track > 0 && trackNumbers.contains(trackKey))
-            track.issues << QStringLiteral("Número de pista repetido");
+            track.issues << QStringLiteral("duplicateTrackNumber");
         if (track.track > 0) trackNumbers.insert(trackKey);
         // Las coherencias se comprueban solo contra pistas del mismo álbum.
         // Una carpeta raíz puede contener varios álbumes completamente válidos.
@@ -187,8 +189,8 @@ void TagService::analyze(QList<TrackInfo> &tracks)
             albumArtists.insert(comparisonKey(peer.albumArtist));
             genres.insert(comparisonKey(peer.genre));
         }
-        if (albumArtists.size() > 1) track.issues << QStringLiteral("Artista del álbum inconsistente");
-        if (genres.size() > 1) track.issues << QStringLiteral("Género inconsistente");
+        if (albumArtists.size() > 1) track.issues << QStringLiteral("inconsistentAlbumArtist");
+        if (genres.size() > 1) track.issues << QStringLiteral("inconsistentGenre");
     }
 }
 

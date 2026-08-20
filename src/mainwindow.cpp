@@ -490,7 +490,7 @@ void MainWindow::populateTable()
             track.track ? QString::number(track.track) : QStringLiteral("—"), track.fileName,
             track.title, track.artist, track.album, track.albumArtist, track.genre,
             track.year ? QString::number(track.year) : QString{}, durationText(track.durationSeconds),
-            track.issues.join(QStringLiteral(" · "))
+            localizedIssues(track)
         };
         for (int column = 0; column < values.size(); ++column) {
             auto *item = new QTableWidgetItem(values.at(column));
@@ -503,18 +503,18 @@ void MainWindow::populateTable()
             if (column == 0 && track.track == 0) { problem = true; suggestion = QStringLiteral("Introduce el número de pista"); }
             if (column == 2 && track.title.trimmed().isEmpty()) { problem = true; suggestion = QFileInfo(track.path).completeBaseName(); }
             if (column == 3 && track.artist.trimmed().isEmpty()) { problem = true; suggestion = QStringLiteral("Introduce el artista de la pista"); }
-            if (column == 4 && (track.album.trimmed().isEmpty() || track.issues.contains(QStringLiteral("Nombre de álbum inconsistente")))) {
+            if (column == 4 && (track.album.trimmed().isEmpty() || track.issues.contains(QStringLiteral("inconsistentAlbumName")))) {
                 problem = true;
                 suggestion = suggestedAlbum;
                 if (suggestion.isEmpty()) suggestion = ui->albumFilterCombo->currentData().toString();
             }
-            if (column == 5 && (track.albumArtist.trimmed().isEmpty() || track.issues.contains(QStringLiteral("Artista del álbum inconsistente")))) {
+            if (column == 5 && (track.albumArtist.trimmed().isEmpty() || track.issues.contains(QStringLiteral("inconsistentAlbumArtist")))) {
                 problem = true;
                 suggestion = suggestedAlbumArtist;
                 if (suggestion.isEmpty() && !ui->compilationCheck->isChecked()) suggestion = commonText(&TrackInfo::artist);
                 if (suggestion.isEmpty() && ui->compilationCheck->isChecked()) suggestion = QStringLiteral("Various Artists");
             }
-            if (column == 6 && track.issues.contains(QStringLiteral("Género inconsistente"))) {
+            if (column == 6 && track.issues.contains(QStringLiteral("inconsistentGenre"))) {
                 problem = true; suggestion = suggestedGenre;
             }
             // En recopilatorios el año es siempre un dato individual: no se
