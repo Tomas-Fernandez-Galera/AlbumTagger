@@ -141,6 +141,57 @@ void MainWindow::applyLanguage(const QString &code)
     ui->trackTable->setHorizontalHeaderLabels(headers);
     ui->folderPath->setPlaceholderText(s[24]); ui->coverUrlEdit->setPlaceholderText(s[25]);
     updateArtistPlaceholder(ui->compilationCheck->isChecked());
+
+    // Los códigos de validación almacenados en TrackInfo no cambian. Volver a
+    // dibujar basta para que los mensajes adopten el nuevo idioma al instante.
+    if (!tracks_.isEmpty()) populateTable();
+}
+
+QString MainWindow::issueText(const QString &issueId, const QString &detail) const
+{
+    // El orden de estas diez entradas coincide en todos los idiomas. Mantener
+    // los identificadores fuera del catálogo evita que la lógica compare textos
+    // traducidos y permite cambiar de lengua sin repetir el análisis del álbum.
+    static const QStringList ids = {
+        QStringLiteral("readError"), QStringLiteral("missingTitle"),
+        QStringLiteral("missingArtist"), QStringLiteral("missingAlbum"),
+        QStringLiteral("missingAlbumArtist"), QStringLiteral("missingTrackNumber"),
+        QStringLiteral("inconsistentAlbumName"), QStringLiteral("duplicateTrackNumber"),
+        QStringLiteral("inconsistentAlbumArtist"), QStringLiteral("inconsistentGenre")
+    };
+    static const QHash<QString, QStringList> messages = {
+        {"es", {"No se pudo leer el archivo", "Sin título", "Sin artista", "Sin álbum", "Sin artista del álbum", "Sin número de pista", "Nombre de álbum inconsistente", "Número de pista repetido", "Artista del álbum inconsistente", "Género inconsistente"}},
+        {"en", {"Unable to read file", "Missing title", "Missing artist", "Missing album", "Missing album artist", "Missing track number", "Inconsistent album name", "Duplicate track number", "Inconsistent album artist", "Inconsistent genre"}},
+        {"fr", {"Impossible de lire le fichier", "Titre manquant", "Artiste manquant", "Album manquant", "Artiste de l’album manquant", "Numéro de piste manquant", "Nom d’album incohérent", "Numéro de piste en double", "Artiste de l’album incohérent", "Genre incohérent"}},
+        {"de", {"Datei konnte nicht gelesen werden", "Titel fehlt", "Interpret fehlt", "Album fehlt", "Albuminterpret fehlt", "Titelnummer fehlt", "Albumname ist inkonsistent", "Doppelte Titelnummer", "Albuminterpret ist inkonsistent", "Genre ist inkonsistent"}},
+        {"it", {"Impossibile leggere il file", "Titolo mancante", "Artista mancante", "Album mancante", "Artista dell’album mancante", "Numero traccia mancante", "Nome album non coerente", "Numero traccia duplicato", "Artista dell’album non coerente", "Genere non coerente"}},
+        {"pt", {"Não foi possível ler o ficheiro", "Título em falta", "Artista em falta", "Álbum em falta", "Artista do álbum em falta", "Número da faixa em falta", "Nome do álbum inconsistente", "Número da faixa repetido", "Artista do álbum inconsistente", "Género inconsistente"}},
+        {"nl", {"Bestand kan niet worden gelezen", "Titel ontbreekt", "Artiest ontbreekt", "Album ontbreekt", "Albumartiest ontbreekt", "Tracknummer ontbreekt", "Albumnaam is inconsistent", "Dubbel tracknummer", "Albumartiest is inconsistent", "Genre is inconsistent"}},
+        {"pl", {"Nie można odczytać pliku", "Brak tytułu", "Brak wykonawcy", "Brak albumu", "Brak wykonawcy albumu", "Brak numeru utworu", "Niespójna nazwa albumu", "Powtórzony numer utworu", "Niespójny wykonawca albumu", "Niespójny gatunek"}},
+        {"ru", {"Не удалось прочитать файл", "Нет названия", "Нет исполнителя", "Нет альбома", "Нет исполнителя альбома", "Нет номера трека", "Несогласованное название альбома", "Повторяющийся номер трека", "Несогласованный исполнитель альбома", "Несогласованный жанр"}},
+        {"zh_CN", {"无法读取文件", "缺少标题", "缺少艺人", "缺少专辑", "缺少专辑艺人", "缺少曲目编号", "专辑名称不一致", "曲目编号重复", "专辑艺人不一致", "流派不一致"}},
+        {"ja", {"ファイルを読み込めません", "タイトルがありません", "アーティストがありません", "アルバムがありません", "アルバムアーティストがありません", "トラック番号がありません", "アルバム名が一致しません", "トラック番号が重複しています", "アルバムアーティストが一致しません", "ジャンルが一致しません"}},
+        {"ko", {"파일을 읽을 수 없습니다", "제목 없음", "아티스트 없음", "앨범 없음", "앨범 아티스트 없음", "트랙 번호 없음", "앨범 이름 불일치", "트랙 번호 중복", "앨범 아티스트 불일치", "장르 불일치"}},
+        {"ca", {"No s’ha pogut llegir el fitxer", "Falta el títol", "Falta l’artista", "Falta l’àlbum", "Falta l’artista de l’àlbum", "Falta el número de pista", "Nom d’àlbum incoherent", "Número de pista repetit", "Artista de l’àlbum incoherent", "Gènere incoherent"}},
+        {"eu", {"Ezin izan da fitxategia irakurri", "Izenburua falta da", "Artista falta da", "Albuma falta da", "Albumaren artista falta da", "Pista-zenbakia falta da", "Albumaren izena ez dator bat", "Pista-zenbakia errepikatuta", "Albumaren artista ez dator bat", "Generoa ez dator bat"}},
+        {"gl", {"Non se puido ler o ficheiro", "Falta o título", "Falta o artista", "Falta o álbum", "Falta o artista do álbum", "Falta o número de pista", "Nome do álbum incoherente", "Número de pista repetido", "Artista do álbum incoherente", "Xénero incoherente"}}
+    };
+
+    const int index = ids.indexOf(issueId);
+    const QStringList translated = messages.value(languageCode_, messages.value(QStringLiteral("en")));
+    QString result = index >= 0 ? translated.value(index) : issueId;
+    if (issueId == QStringLiteral("readError") && !detail.trimmed().isEmpty())
+        result += QStringLiteral(": ") + detail;
+    return result;
+}
+
+QString MainWindow::localizedIssues(const TrackInfo &track) const
+{
+    QStringList translated;
+    translated.reserve(track.issues.size());
+    for (const QString &issueId : track.issues)
+        translated << issueText(issueId, issueId == QStringLiteral("readError") ? track.error : QString());
+    return translated.join(QStringLiteral(" · "));
 }
 
 QString MainWindow::uiText(const QString &key, int number) const
