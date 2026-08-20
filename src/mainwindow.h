@@ -83,6 +83,9 @@ private:
     void applyLanguage(const QString &code);
     void updateArtistPlaceholder(bool compilation);
     QString uiText(const QString &key, int number = -1) const;
+    /// Convierte un identificador de validación estable en texto visible.
+    QString issueText(const QString &issueId, const QString &detail = {}) const;
+    QString localizedIssues(const TrackInfo &track) const;
 
     // Utilidades para calcular valores comunes y el subconjunto visible.
     QString commonText(QString TrackInfo::*member) const;
