@@ -22,6 +22,16 @@ The source code is distributed under the [GNU General Public License version 3](
 - JSON backup before tag changes are written.
 - User interface available in 15 languages.
 
+## Screenshots
+
+### Detecting inconsistent metadata
+
+![Album loaded with inconsistent tags highlighted](docs/screenshots/album-loaded.png)
+
+### Reviewing corrected tags before saving
+
+![Corrected album tags ready to be saved](docs/screenshots/editing-tags.png)
+
 ## Open in Qt Creator
 
 Requirements:
@@ -55,7 +65,7 @@ After building the Release configuration:
 powershell -ExecutionPolicy Bypass -File scripts\package-portable.ps1
 ```
 
-The script locates `windeployqt.exe` through `PATH`. You can also specify the Qt installation with `-QtRoot "PATH_TO_QT"`. The result is written to `dist/AlbumTagger-1.0.0-Windows-x64` and a ZIP file with the same name.
+The script locates `windeployqt.exe` through `PATH`. You can also specify the Qt installation with `-QtRoot "PATH_TO_QT"`. The result is written to `dist/AlbumTagger-1.0.1-Windows-x64` and a ZIP file with the same name.
 
 ## Safety
 
@@ -116,7 +126,7 @@ Después de compilar la configuración Release:
 powershell -ExecutionPolicy Bypass -File scripts\package-portable.ps1
 ```
 
-El script localiza `windeployqt.exe` mediante `PATH`. También puede indicarse la instalación explícitamente con `-QtRoot "RUTA_A_QT"`. El resultado queda en `dist/AlbumTagger-1.0.0-Windows-x64` y en el ZIP del mismo nombre.
+El script localiza `windeployqt.exe` mediante `PATH`. También puede indicarse la instalación explícitamente con `-QtRoot "RUTA_A_QT"`. El resultado queda en `dist/AlbumTagger-1.0.1-Windows-x64` y en el ZIP del mismo nombre.
 
 ### Seguridad
 

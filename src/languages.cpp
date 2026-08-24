@@ -140,7 +140,21 @@ void MainWindow::applyLanguage(const QString &code)
     const QStringList headers = {QStringLiteral("#"), s[19], s[20], s[21], s[6], s[8], s[11], s[10], s[22], s[23]};
     ui->trackTable->setHorizontalHeaderLabels(headers);
     ui->folderPath->setPlaceholderText(s[24]); ui->coverUrlEdit->setPlaceholderText(s[25]);
+    ui->multiArtistHint->setText(uiText(QStringLiteral("multiArtistHint")));
     updateArtistPlaceholder(ui->compilationCheck->isChecked());
+
+    // Los elementos del filtro se crean al analizar el álbum. Al cambiar de
+    // idioma con archivos ya cargados también hay que retraducirlos: cambiar
+    // solo las etiquetas estáticas dejaba el texto anterior en el desplegable.
+    for (int index = 0; index < ui->albumFilterCombo->count(); ++index) {
+        if (!ui->albumFilterCombo->itemData(index).toString().isEmpty()) continue;
+        ui->albumFilterCombo->setItemText(index,
+            ui->albumFilterCombo->count() > 1
+                ? uiText(QStringLiteral("allAlbumsDiagnostic"))
+                : uiText(QStringLiteral("unidentifiedAlbum")));
+    }
+    if (!tracks_.isEmpty())
+        statusBar()->showMessage(uiText(QStringLiteral("filesAnalyzed"), tracks_.size()));
 
     // Los códigos de validación almacenados en TrackInfo no cambian. Volver a
     // dibujar basta para que los mensajes adopten el nuevo idioma al instante.
@@ -149,6 +163,28 @@ void MainWindow::applyLanguage(const QString &code)
 
 QString MainWindow::issueText(const QString &issueId, const QString &detail) const
 {
+    if (issueId == QStringLiteral("missingGenre")) {
+        static const QHash<QString, QString> missingGenreMessages = {
+            {"es", "Sin género"}, {"en", "Missing genre"}, {"fr", "Genre manquant"},
+            {"de", "Genre fehlt"}, {"it", "Genere mancante"}, {"pt", "Género em falta"},
+            {"nl", "Genre ontbreekt"}, {"pl", "Brak gatunku"}, {"ru", "Нет жанра"},
+            {"zh_CN", "缺少流派"}, {"ja", "ジャンルがありません"}, {"ko", "장르 없음"},
+            {"ca", "Falta el gènere"}, {"eu", "Generoa falta da"}, {"gl", "Falta o xénero"}
+        };
+        return missingGenreMessages.value(languageCode_, missingGenreMessages.value(QStringLiteral("en")));
+    }
+    // El año ausente se valida también en recopilatorios. Se mantiene en un
+    // catálogo separado para no alterar los índices históricos de los avisos.
+    if (issueId == QStringLiteral("missingYear")) {
+        static const QHash<QString, QString> missingYearMessages = {
+            {"es", "Sin año"}, {"en", "Missing year"}, {"fr", "Année manquante"},
+            {"de", "Jahr fehlt"}, {"it", "Anno mancante"}, {"pt", "Ano em falta"},
+            {"nl", "Jaar ontbreekt"}, {"pl", "Brak roku"}, {"ru", "Нет года"},
+            {"zh_CN", "缺少年份"}, {"ja", "年がありません"}, {"ko", "연도 없음"},
+            {"ca", "Falta l’any"}, {"eu", "Urtea falta da"}, {"gl", "Falta o ano"}
+        };
+        return missingYearMessages.value(languageCode_, missingYearMessages.value(QStringLiteral("en")));
+    }
     // El orden de estas diez entradas coincide en todos los idiomas. Mantener
     // los identificadores fuera del catálogo evita que la lógica compare textos
     // traducidos y permite cambiar de lengua sin repetir el análisis del álbum.
@@ -196,6 +232,66 @@ QString MainWindow::localizedIssues(const TrackInfo &track) const
 
 QString MainWindow::uiText(const QString &key, int number) const
 {
+    // Textos contextuales del editor. El inglés es el fallback deliberado:
+    // ningún idioma debe heredar accidentalmente literales escritos en español.
+    static const QHash<QString, QStringList> editorTexts = {
+        {"es", {
+            "Escribe aquí el nombre correcto para unificar todas las pistas",
+            "Sin año común: se conservan los años individuales de cada canción",
+            "Sugerencia: año mayoritario del álbum",
+            "Sugerencia: género mayoritario del álbum",
+            "Sugerencia basada en el artista de las pistas",
+            "Aplicar este nombre de álbum a todas las pistas visibles",
+            "Escribe el nombre correcto del álbum para habilitar la corrección",
+            "Todos los álbumes — solo diagnóstico",
+            "%1 archivos analizados",
+            "Álbum sin identificar"
+        }},
+        {"en", {
+            "Enter the correct album name here to unify all tracks",
+            "No common year: each track's individual year will be preserved",
+            "Suggestion: most common album year",
+            "Suggestion: most common album genre",
+            "Suggestion based on the track artists",
+            "Apply this album name to all visible tracks",
+            "Enter the correct album name to enable the correction",
+            "All albums — diagnostics only",
+            "%1 files analyzed",
+            "Unidentified album"
+        }}
+    };
+    static const QHash<QString, int> editorIndexes = {
+        {"unifyAlbumPlaceholder", 0}, {"compilationYearTip", 1},
+        {"majorityYearTip", 2}, {"majorityGenreTip", 3},
+        {"albumArtistTip", 4}, {"applyUnifiedAlbumTip", 5},
+        {"enterAlbumTip", 6}, {"allAlbumsDiagnostic", 7},
+        {"filesAnalyzed", 8}, {"unidentifiedAlbum", 9}
+    };
+    if (editorIndexes.contains(key)) {
+        const QStringList values = editorTexts.value(languageCode_, editorTexts.value(QStringLiteral("en")));
+        const QString value = values.value(editorIndexes.value(key));
+        return number >= 0 ? value.arg(number) : value;
+    }
+    if (key == QStringLiteral("multiArtistHint")) {
+        static const QHash<QString, QString> hints = {
+            {"es", "Se han detectado varios artistas. Activa recopilatorio para conservarlos."},
+            {"en", "Multiple artists detected. Enable compilation mode to preserve them."},
+            {"fr", "Plusieurs artistes ont été détectés. Activez le mode compilation pour les conserver."},
+            {"de", "Mehrere Interpreten erkannt. Aktivieren Sie den Sampler-Modus, um sie beizubehalten."},
+            {"it", "Sono stati rilevati più artisti. Attiva la modalità raccolta per conservarli."},
+            {"pt", "Foram detetados vários artistas. Ative o modo coletânea para os manter."},
+            {"nl", "Meerdere artiesten gedetecteerd. Schakel compilatiemodus in om ze te behouden."},
+            {"pl", "Wykryto wielu wykonawców. Włącz tryb kompilacji, aby ich zachować."},
+            {"ru", "Обнаружено несколько исполнителей. Включите режим сборника, чтобы сохранить их."},
+            {"zh_CN", "检测到多个艺人。启用合辑模式以保留他们。"},
+            {"ja", "複数のアーティストが検出されました。コンピレーションモードを有効にしてください。"},
+            {"ko", "여러 아티스트가 감지되었습니다. 컴필레이션 모드를 활성화하세요."},
+            {"ca", "S’han detectat diversos artistes. Activa el mode recopilatori per conservar-los."},
+            {"eu", "Hainbat artista hauteman dira. Aktibatu bilduma modua haiek mantentzeko."},
+            {"gl", "Detectáronse varios artistas. Activa o modo recompilatorio para conservalos."}
+        };
+        return hints.value(languageCode_, hints.value(QStringLiteral("en")));
+    }
     // Textos breves que cambian durante la ejecución y no pueden limitarse a
     // las etiquetas estáticas aplicadas por applyLanguage.
     static const QHash<QString, QStringList> texts = {
@@ -222,6 +318,14 @@ QString MainWindow::uiText(const QString &key, int number) const
     const QStringList values = texts.value(languageCode_, texts.value(QStringLiteral("en")));
     const int index = indexes.value(key, 0);
     return number >= 0 ? values[index].arg(number) : values[index];
+}
+
+QString MainWindow::runtimeText(const QString &spanish, const QString &english) const
+{
+    // Los catálogos completos cubren la interfaz principal. Para mensajes
+    // contextuales menos frecuentes, el inglés es el fallback seguro: así un
+    // idioma distinto del español nunca muestra por accidente texto español.
+    return languageCode_ == QStringLiteral("es") ? spanish : english;
 }
 
 void MainWindow::updateArtistPlaceholder(bool compilation)

@@ -83,6 +83,7 @@ private:
     void applyLanguage(const QString &code);
     void updateArtistPlaceholder(bool compilation);
     QString uiText(const QString &key, int number = -1) const;
+    QString runtimeText(const QString &spanish, const QString &english) const;
     /// Convierte un identificador de validación estable en texto visible.
     QString issueText(const QString &issueId, const QString &detail = {}) const;
     QString localizedIssues(const TrackInfo &track) const;
