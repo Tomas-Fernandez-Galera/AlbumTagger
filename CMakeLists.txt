@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.24)
 
-project(AlbumTagger VERSION 1.0.0 LANGUAGES CXX)
+project(AlbumTagger VERSION 1.0.1 LANGUAGES CXX)
 
 # C++20 es la única variante admitida por el proyecto. Desactivar extensiones
 # evita depender accidentalmente de comportamientos exclusivos de MinGW.

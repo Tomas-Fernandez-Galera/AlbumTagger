@@ -85,7 +85,8 @@ MainWindow::MainWindow(QWidget *parent)
     rowHeader->setHighlightSections(true);
     rowHeader->setMinimumSectionSize(24);
     rowHeader->setDefaultSectionSize(28);
-    rowHeader->setToolTip(QStringLiteral("Arrastra el asa ☰ para cambiar el orden de las canciones"));
+    rowHeader->setToolTip(runtimeText(QStringLiteral("Arrastra el asa ☰ para cambiar el orden de las canciones"),
+                                      QStringLiteral("Drag the ☰ handle to reorder tracks")));
     ui->trackTable->setEditTriggers(QAbstractItemView::DoubleClicked |
                                     QAbstractItemView::SelectedClicked |
                                     QAbstractItemView::EditKeyPressed);
@@ -141,7 +142,7 @@ MainWindow::MainWindow(QWidget *parent)
         // En la vista con varios nombres, escribir uno expresamente autoriza a
         // unificarlos. La mayoría detectada sigue siendo solo una sugerencia.
         ui->applyButton->setEnabled(!tracks_.isEmpty() && !ui->albumEdit->text().trimmed().isEmpty());
-        ui->applyButton->setToolTip(QStringLiteral("Aplicar este nombre de álbum a todas las pistas visibles"));
+        ui->applyButton->setToolTip(uiText(QStringLiteral("applyUnifiedAlbumTip")));
     });
     connect(ui->artistEdit, &QLineEdit::textEdited, this, [this] { commonFieldsDirty_ = true; });
     connect(ui->albumArtistEdit, &QLineEdit::textEdited, this, [this] { commonFieldsDirty_ = true; });
@@ -169,8 +170,10 @@ MainWindow::MainWindow(QWidget *parent)
     // tabla se usa QSignalBlocker para que este callback no produzca falsos cambios.
     connect(ui->trackTable, &QTableWidget::itemChanged, this, [this](QTableWidgetItem *item) {
         item->setBackground(QColor(222, 235, 255));
-        item->setToolTip(QStringLiteral("Cambio pendiente de guardar"));
-        statusBar()->showMessage(QStringLiteral("Hay cambios pendientes. Pulsa Aplicar cambios para guardarlos."));
+        item->setToolTip(runtimeText(QStringLiteral("Cambio pendiente de guardar"), QStringLiteral("Unsaved change")));
+        statusBar()->showMessage(runtimeText(
+            QStringLiteral("Hay cambios pendientes. Pulsa Aplicar cambios para guardarlos."),
+            QStringLiteral("There are pending changes. Press Apply changes to keep them.")));
     });
     // En recopilatorios se conserva el artista individual de cada pista.
     connect(ui->compilationCheck, &QCheckBox::toggled, this, [this](bool compilation) {
@@ -187,8 +190,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->renumberCheck, &QCheckBox::toggled, this, [this](bool enabled) {
         if (enabled) renumberVisibleRows();
         statusBar()->showMessage(enabled
-            ? QStringLiteral("Los números de pista seguirán el orden visible al guardar")
-            : QStringLiteral("El orden visual no modificará los números de pista"), 5000);
+            ? runtimeText(QStringLiteral("Los números de pista seguirán el orden visible al guardar"),
+                          QStringLiteral("Track numbers will follow the visible order when saved"))
+            : runtimeText(QStringLiteral("El orden visual no modificará los números de pista"),
+                          QStringLiteral("The visible order will not change track numbers")), 5000);
     });
     connect(rowHeader, &QHeaderView::sectionMoved, this, [this](int, int, int) {
         rowOrderDirty_ = true;
@@ -198,7 +203,8 @@ MainWindow::MainWindow(QWidget *parent)
     // setupLanguages se ejecuta antes de crear estos controles dinámicos. Una
     // segunda aplicación traduce también los botones añadidos por código.
     applyLanguage(languageCode_);
-    statusBar()->showMessage(QStringLiteral("Selecciona una carpeta de música para comenzar"));
+    statusBar()->showMessage(runtimeText(QStringLiteral("Selecciona una carpeta de música para comenzar"),
+                                         QStringLiteral("Select a music folder to begin")));
 }
 
 MainWindow::~MainWindow()
@@ -208,7 +214,8 @@ MainWindow::~MainWindow()
 
 void MainWindow::chooseFolder()
 {
-    const QString selected = QFileDialog::getExistingDirectory(this, QStringLiteral("Seleccionar carpeta del álbum"), folder_);
+    const QString selected = QFileDialog::getExistingDirectory(this,
+        runtimeText(QStringLiteral("Seleccionar carpeta del álbum"), QStringLiteral("Select album folder")), folder_);
     if (!selected.isEmpty()) scan(selected);
 }
 
@@ -345,7 +352,7 @@ void MainWindow::scan(const QString &folder)
     updateAlbumFilter();
     populateTable();
     updateSummary();
-    setBusy(false, QStringLiteral("%1 archivos analizados").arg(tracks_.size()));
+    setBusy(false, uiText(QStringLiteral("filesAnalyzed"), tracks_.size()));
 }
 
 void MainWindow::loadExistingCover()
@@ -418,11 +425,11 @@ void MainWindow::updateAlbumFilter()
     QStringList sortedAlbums = albums.values();
     sortedAlbums.sort(Qt::CaseInsensitive);
     if (sortedAlbums.size() > 1)
-        ui->albumFilterCombo->addItem(QStringLiteral("Todos los álbumes — solo diagnóstico"), QString{});
+        ui->albumFilterCombo->addItem(uiText(QStringLiteral("allAlbumsDiagnostic")), QString{});
     for (const QString &album : sortedAlbums)
         ui->albumFilterCombo->addItem(album, album);
     if (ui->albumFilterCombo->count() == 0)
-        ui->albumFilterCombo->addItem(QStringLiteral("Álbum sin identificar"), QString{});
+        ui->albumFilterCombo->addItem(uiText(QStringLiteral("unidentifiedAlbum")), QString{});
 }
 
 void MainWindow::albumFilterChanged()
@@ -514,15 +521,25 @@ void MainWindow::populateTable()
                 if (suggestion.isEmpty() && !ui->compilationCheck->isChecked()) suggestion = commonText(&TrackInfo::artist);
                 if (suggestion.isEmpty() && ui->compilationCheck->isChecked()) suggestion = QStringLiteral("Various Artists");
             }
-            if (column == 6 && track.issues.contains(QStringLiteral("inconsistentGenre"))) {
-                problem = true; suggestion = suggestedGenre;
+            if (column == 6 &&
+                (track.issues.contains(QStringLiteral("missingGenre")) ||
+                 track.issues.contains(QStringLiteral("inconsistentGenre")))) {
+                problem = true;
+                suggestion = suggestedGenre.isEmpty()
+                    ? issueText(QStringLiteral("missingGenre")) : suggestedGenre;
             }
-            // En recopilatorios el año es siempre un dato individual: no se
-            // colorea ni se propone un valor común, incluso si alguna pista no
-            // lo tiene o la mayoría coincide en el mismo año.
-            if (column == 7 && !compilationMode &&
-                (track.year == 0 || (yearCounts.size() > 1 && track.year != suggestedYear))) {
-                problem = true; suggestion = suggestedYear ? QString::number(suggestedYear) : QStringLiteral("Introduce el año");
+            // Los años diferentes son válidos en recopilatorios, pero un año
+            // ausente sigue siendo un dato incompleto de esa pista concreta.
+            if (column == 7 && track.year == 0) {
+                problem = true;
+                suggestion = compilationMode
+                    ? issueText(QStringLiteral("missingYear"))
+                    : (suggestedYear ? QString::number(suggestedYear)
+                                     : issueText(QStringLiteral("missingYear")));
+            } else if (column == 7 && !compilationMode &&
+                       yearCounts.size() > 1 && track.year != suggestedYear) {
+                problem = true;
+                suggestion = QString::number(suggestedYear);
             }
             item->setData(Qt::UserRole + 1, problem);
             if (problem) {
@@ -730,10 +747,10 @@ void MainWindow::updateSummary()
     ui->genreEdit->setStyleSheet(genreNeedsSuggestion ? suggestionStyle : QString{});
     ui->albumArtistEdit->setStyleSheet(albumArtistNeedsSuggestion ? suggestionStyle : QString{});
     ui->yearSpin->setToolTip(compilationMode
-        ? QStringLiteral("Sin año común: se conservan los años individuales de cada canción")
-        : (yearNeedsSuggestion ? QStringLiteral("Sugerencia: año mayoritario del álbum") : QString{}));
-    ui->genreEdit->setToolTip(genreNeedsSuggestion ? QStringLiteral("Sugerencia: género mayoritario del álbum") : QString{});
-    ui->albumArtistEdit->setToolTip(albumArtistCounts.isEmpty() ? QStringLiteral("Sugerencia basada en el artista de las pistas") : QString{});
+        ? uiText(QStringLiteral("compilationYearTip"))
+        : (yearNeedsSuggestion ? uiText(QStringLiteral("majorityYearTip")) : QString{}));
+    ui->genreEdit->setToolTip(genreNeedsSuggestion ? uiText(QStringLiteral("majorityGenreTip")) : QString{});
+    ui->albumArtistEdit->setToolTip(albumArtistCounts.isEmpty() ? uiText(QStringLiteral("albumArtistTip")) : QString{});
     bool compilation = false;
     QSet<QString> artists;
     for (const auto &track : visibleTracks) {
@@ -742,18 +759,20 @@ void MainWindow::updateSummary()
             artists.insert(track.artist.trimmed().toCaseFolded());
     }
     if (!commonFieldsDirty_) ui->compilationCheck->setChecked(compilation);
-    ui->multiArtistHint->setVisible(artists.size() > 1);
+    // El aviso solo pide activar el modo recopilatorio. Una vez activado, la
+    // situación ya está resuelta y mantenerlo visible resultaría engañoso.
+    ui->multiArtistHint->setVisible(artists.size() > 1 && !ui->compilationCheck->isChecked());
     const bool multipleAlbumsView = ui->albumFilterCombo->currentData().toString().isEmpty() &&
                                     ui->albumFilterCombo->count() > 1;
     ui->albumEdit->setPlaceholderText(multipleAlbumsView
-        ? QStringLiteral("Escribe aquí el nombre correcto para unificar todas las pistas") : QString{});
+        ? uiText(QStringLiteral("unifyAlbumPlaceholder")) : QString{});
     const bool explicitAlbumUnification = multipleAlbumsView && albumFieldDirty_ &&
                                           !ui->albumEdit->text().trimmed().isEmpty();
     ui->applyButton->setEnabled(!visibleTracks.isEmpty() && (!multipleAlbumsView || explicitAlbumUnification));
     ui->applyButton->setToolTip(multipleAlbumsView
         ? (explicitAlbumUnification
-            ? QStringLiteral("Aplicar este nombre de álbum a todas las pistas visibles")
-            : QStringLiteral("Escribe el nombre correcto del álbum para habilitar la corrección"))
+            ? uiText(QStringLiteral("applyUnifiedAlbumTip"))
+            : uiText(QStringLiteral("enterAlbumTip")))
         : QString{});
 }
 
