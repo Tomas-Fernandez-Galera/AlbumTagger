@@ -168,6 +168,10 @@ void TagService::analyze(QList<TrackInfo> &tracks)
         if (track.album.trimmed().isEmpty()) track.issues << QStringLiteral("missingAlbum");
         if (track.albumArtist.trimmed().isEmpty()) track.issues << QStringLiteral("missingAlbumArtist");
         if (track.track == 0) track.issues << QStringLiteral("missingTrackNumber");
+        if (track.genre.trimmed().isEmpty()) track.issues << QStringLiteral("missingGenre");
+        // En un recopilatorio pueden coexistir años distintos, pero una pista
+        // sin año continúa siendo un dato incompleto y debe advertirse.
+        if (track.year == 0) track.issues << QStringLiteral("missingYear");
         const QString directory = QFileInfo(track.path).absolutePath();
         if (!track.album.trimmed().isEmpty() &&
             (directoriesWithoutUniqueMajority.contains(directory) ||
@@ -190,7 +194,10 @@ void TagService::analyze(QList<TrackInfo> &tracks)
             genres.insert(comparisonKey(peer.genre));
         }
         if (albumArtists.size() > 1) track.issues << QStringLiteral("inconsistentAlbumArtist");
-        if (genres.size() > 1) track.issues << QStringLiteral("inconsistentGenre");
+        // Una pista vacía ya tiene el aviso específico missingGenre; evitamos
+        // mostrar dos avisos distintos para el mismo dato ausente.
+        if (genres.size() > 1 && !track.genre.trimmed().isEmpty())
+            track.issues << QStringLiteral("inconsistentGenre");
     }
 }
 
