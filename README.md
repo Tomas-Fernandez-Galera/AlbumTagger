@@ -2,6 +2,8 @@
 
 Copyright © 2026 Tomás Fernández Galera.
 
+![AlbumTagger main window](docs/screenshots/albumtagger-main.png)
+
 AlbumTagger is a Windows desktop application that detects and fixes metadata differences capable of splitting one album into several “ghost albums”. It is especially optimized for preparing music libraries used with moOde Audio, while remaining compatible with other players and servers that support standard tags.
 
 AlbumTagger is an independent project and is not officially affiliated with or endorsed by moOde Audio.
