@@ -4,6 +4,7 @@
 #include <QComboBox>
 #include <QCoreApplication>
 #include <QHash>
+#include <QHeaderView>
 #include <QIcon>
 #include <QLocale>
 #include <QMessageBox>
@@ -54,7 +55,6 @@ void MainWindow::setupLanguages()
     if (selectedIndex < 0) selectedIndex = ui->languageCombo->findData(QStringLiteral("en"));
     ui->languageCombo->setCurrentIndex(selectedIndex);
     applyLanguage(ui->languageCombo->currentData().toString());
-    ui->languageCombo->setToolTip(QStringLiteral("Idioma de la interfaz · Por defecto se detecta desde Windows"));
     connect(ui->languageCombo, &QComboBox::activated, this, [this](int index) {
         const QString code = ui->languageCombo->itemData(index).toString();
         QSettings().setValue(QStringLiteral("interface/language"), code);
@@ -142,6 +142,12 @@ void MainWindow::applyLanguage(const QString &code)
     ui->folderPath->setPlaceholderText(s[24]); ui->coverUrlEdit->setPlaceholderText(s[25]);
     ui->multiArtistHint->setText(uiText(QStringLiteral("multiArtistHint")));
     updateArtistPlaceholder(ui->compilationCheck->isChecked());
+    ui->languageCombo->setToolTip(runtimeText(
+        QStringLiteral("Idioma de la interfaz · Por defecto se detecta desde Windows"),
+        QStringLiteral("Interface language · Detected from Windows by default")));
+    ui->trackTable->verticalHeader()->setToolTip(runtimeText(
+        QStringLiteral("Arrastra el asa ☰ para cambiar el orden de las canciones"),
+        QStringLiteral("Drag the ☰ handle to change track order")));
 
     // Los elementos del filtro se crean al analizar el álbum. Al cambiar de
     // idioma con archivos ya cargados también hay que retraducirlos: cambiar
@@ -153,8 +159,10 @@ void MainWindow::applyLanguage(const QString &code)
                 ? uiText(QStringLiteral("allAlbumsDiagnostic"))
                 : uiText(QStringLiteral("unidentifiedAlbum")));
     }
-    if (!tracks_.isEmpty())
-        statusBar()->showMessage(uiText(QStringLiteral("filesAnalyzed"), tracks_.size()));
+    statusBar()->showMessage(tracks_.isEmpty()
+        ? runtimeText(QStringLiteral("Selecciona una carpeta de música para comenzar"),
+                      QStringLiteral("Select a music folder to begin"))
+        : uiText(QStringLiteral("filesAnalyzed"), tracks_.size()));
 
     // Los códigos de validación almacenados en TrackInfo no cambian. Volver a
     // dibujar basta para que los mensajes adopten el nuevo idioma al instante.
