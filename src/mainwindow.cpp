@@ -545,7 +545,9 @@ void MainWindow::populateTable()
             if (problem) {
                 item->setBackground(QColor(255, 221, 221));
                 item->setForeground(QColor(150, 25, 25));
-                item->setToolTip(QStringLiteral("Inconsistente. Sugerencia: %1").arg(suggestion));
+                item->setToolTip(runtimeText(
+                    QStringLiteral("Inconsistente. Sugerencia: %1"),
+                    QStringLiteral("Inconsistent. Suggestion: %1")).arg(suggestion));
             } else {
                 item->setToolTip(column == 1 ? track.path : values.at(column));
             }
@@ -614,7 +616,9 @@ void MainWindow::renumberVisibleRows()
         item->setText(QString::number(visualRow + 1));
         item->setBackground(QColor(222, 235, 255));
         item->setForeground(QColor(35, 70, 135));
-        item->setToolTip(QStringLiteral("Nuevo número de pista pendiente de guardar"));
+        item->setToolTip(runtimeText(
+            QStringLiteral("Nuevo número de pista pendiente de guardar"),
+            QStringLiteral("New track number pending save")));
     }
 }
 
@@ -640,7 +644,8 @@ void MainWindow::moveSelectedRows(int direction)
         header->moveSection(visualRow, destination);
     }
     if (ui->renumberCheck->isChecked()) renumberVisibleRows();
-    statusBar()->showMessage(QStringLiteral("Orden visual modificado"), 3000);
+    statusBar()->showMessage(runtimeText(QStringLiteral("Orden visual modificado"),
+                                         QStringLiteral("Visual order changed")), 3000);
 }
 
 void MainWindow::restoreOriginalOrder()
@@ -650,7 +655,8 @@ void MainWindow::restoreOriginalOrder()
     for (int logicalRow = 0; logicalRow < header->count(); ++logicalRow)
         header->moveSection(header->visualIndex(logicalRow), logicalRow);
     if (ui->renumberCheck->isChecked()) renumberVisibleRows();
-    statusBar()->showMessage(QStringLiteral("Orden original restaurado"), 3000);
+    statusBar()->showMessage(runtimeText(QStringLiteral("Orden original restaurado"),
+                                         QStringLiteral("Original order restored")), 3000);
 }
 
 void MainWindow::saveAlbum()
@@ -683,7 +689,9 @@ void MainWindow::applyAlbumFields()
         if (!compilation && year > 0) ui->trackTable->item(row, 7)->setText(QString::number(year));
     }
     if (saveAlbumButton_) saveAlbumButton_->setEnabled(true);
-    statusBar()->showMessage(QStringLiteral("Cambios aplicados a la tabla. Pulsa Guardar álbum para escribirlos."), 6000);
+    statusBar()->showMessage(runtimeText(
+        QStringLiteral("Cambios aplicados a la tabla. Pulsa Guardar álbum para escribirlos."),
+        QStringLiteral("Changes applied to the table. Click Save album to write them.")), 6000);
 }
 
 void MainWindow::updateSummary()
