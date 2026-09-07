@@ -26,11 +26,11 @@ The source code is distributed under the [GNU General Public License version 3](
 
 ### Detecting inconsistent metadata
 
-![Album loaded with inconsistent tags highlighted](docs/screenshots/album-loaded.png)
+![Album loaded with inconsistent tags highlighted](docs/screenshots/album-loaded-v1.0.2.png)
 
 ### Reviewing corrected tags before saving
 
-![Corrected album tags ready to be saved](docs/screenshots/editing-tags.png)
+![Corrected album tags ready to be saved](docs/screenshots/editing-tags-v1.0.2.png)
 
 ## Open in Qt Creator
 
