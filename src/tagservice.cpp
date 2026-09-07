@@ -87,9 +87,10 @@ TrackInfo TagService::readFile(const QString &path)
     result.fileName = QFileInfo(path).fileName();
 
     const QByteArray nativePath = QFile::encodeName(path);
-    // AudioProperties::Fast evita analizar todo el flujo de audio solo para
-    // obtener duración y tags, algo importante en carpetas grandes.
-    TagLib::FileRef file(nativePath.constData(), true, TagLib::AudioProperties::Fast);
+    // Accurate recorre los frames del archivo. Es algo más costoso que Fast,
+    // pero evita confiar en cabeceras Xing/VBR ausentes o defectuosas que
+    // podrían producir duraciones repetidas o completamente disparatadas.
+    TagLib::FileRef file(nativePath.constData(), true, TagLib::AudioProperties::Accurate);
     if (file.isNull() || !file.tag()) {
         result.error = QStringLiteral("No se pudieron leer las etiquetas");
         return result;
