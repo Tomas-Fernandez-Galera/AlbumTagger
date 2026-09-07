@@ -3,12 +3,8 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$sourceCandidates = @(
-    (Join-Path $PSScriptRoot "..\out\build\release\_deps\taglib-src\tests\data\lame_cbr.mp3"),
-    (Join-Path $PSScriptRoot "..\build-release\_deps\taglib-src\tests\data\lame_cbr.mp3")
-)
-$sourceMp3 = $sourceCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
-if (-not $sourceMp3) {
+$sourceMp3 = Join-Path $PSScriptRoot "..\out\build\release\_deps\taglib-src\tests\data\bladeenc.mp3"
+if (-not (Test-Path -LiteralPath $sourceMp3 -PathType Leaf)) {
     throw "TagLib test MP3 not found. Build AlbumTagger once before running this script."
 }
 
@@ -38,7 +34,7 @@ function New-TextFrame([string]$id, [string]$value) {
     return $frame.ToArray()
 }
 
-function New-TaggedMp3([hashtable]$track, [byte[]]$audioPayload) {
+function New-TaggedMp3([hashtable]$track, [System.Collections.Generic.List[byte[]]]$audioFrames) {
     $frames = [Collections.Generic.List[byte]]::new()
     foreach ($entry in @(
         @("TIT2", $track.Title), @("TPE1", $track.Artist), @("TALB", $track.Album),
@@ -56,24 +52,33 @@ function New-TaggedMp3([hashtable]$track, [byte[]]$audioPayload) {
     $result = [Collections.Generic.List[byte]]::new()
     $result.AddRange($header)
     $result.AddRange($frames)
-    $result.AddRange($audioPayload)
+    $wantedFrames = [Math]::Max(1, [Math]::Round([double]$track.Seconds * 44100.0 / 1152.0))
+    for ($i = 0; $i -lt $wantedFrames; $i++) {
+        $result.AddRange($audioFrames[$i % $audioFrames.Count])
+    }
     [IO.File]::WriteAllBytes((Join-Path $Destination $track.File), $result.ToArray())
 }
 
-# Remove any original ID3 header so every file contains only our fictional tags.
+# Extract complete MPEG-1 Layer III frames. The former 4 KiB truncated fixture
+# produced the bogus 31:27 duration and must never be used as playable audio.
 $source = [IO.File]::ReadAllBytes($sourceMp3)
 $offset = 0
-if ($source.Length -ge 10 -and [Text.Encoding]::ASCII.GetString($source, 0, 3) -eq "ID3") {
-    $tagSize = (($source[6] -band 0x7f) -shl 21) -bor (($source[7] -band 0x7f) -shl 14) -bor
-               (($source[8] -band 0x7f) -shl 7) -bor ($source[9] -band 0x7f)
-    $offset = 10 + $tagSize
+$mpegFrames = [System.Collections.Generic.List[byte[]]]::new()
+$bitrates = @(0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320)
+while ($offset + 4 -le $source.Length) {
+    if ($source[$offset] -ne 0xff -or (($source[$offset + 1] -band 0xe0) -ne 0xe0)) { break }
+    $bitrateIndex = ($source[$offset + 2] -shr 4) -band 0x0f
+    $sampleRateIndex = ($source[$offset + 2] -shr 2) -band 0x03
+    if ($bitrateIndex -eq 0 -or $bitrateIndex -eq 15 -or $sampleRateIndex -ne 0) { break }
+    $padding = ($source[$offset + 2] -shr 1) -band 1
+    $frameLength = [Math]::Floor(144000 * $bitrates[$bitrateIndex] / 44100) + $padding
+    if ($offset + $frameLength -gt $source.Length) { break }
+    $frame = [byte[]]::new($frameLength)
+    [Array]::Copy($source, $offset, $frame, 0, $frameLength)
+    $mpegFrames.Add($frame)
+    $offset += $frameLength
 }
-$payloadLength = $source.Length - $offset
-if ($payloadLength -ge 128 -and [Text.Encoding]::ASCII.GetString($source, $source.Length - 128, 3) -eq "TAG") {
-    $payloadLength -= 128
-}
-$audioPayload = [byte[]]::new($payloadLength)
-[Array]::Copy($source, $offset, $audioPayload, 0, $payloadLength)
+if ($mpegFrames.Count -eq 0) { throw "No complete MPEG frames found in $sourceMp3" }
 
 # Deliberate defects: missing years/genres/tracks, duplicate track number,
 # inconsistent album spelling and inconsistent album-artist values.
@@ -90,7 +95,10 @@ $tracks = @(
     @{File="10 - Last Carrier.mp3"; Title="Last Carrier"; Artist="Mira Vale"; Album="Broken Signals"; AlbumArtist="Various Artists"; Genre="Electronic"; Year=""; Track="10"}
 )
 
-foreach ($track in $tracks) { New-TaggedMp3 $track $audioPayload }
+for ($i = 0; $i -lt $tracks.Count; $i++) {
+    $tracks[$i].Seconds = 12 + (2 * $i)
+    New-TaggedMp3 $tracks[$i] $mpegFrames
+}
 
 # Original, programmatically drawn cover; no third-party artwork is used.
 Add-Type -AssemblyName System.Drawing
